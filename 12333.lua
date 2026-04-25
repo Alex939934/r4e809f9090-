@@ -168,7 +168,9 @@ function Menu.ApplyTheme(themeName)
     end
 
     if Menu.Banner.enabled and Menu.Banner.imageUrl then
-        Menu.LoadBannerTexture(Menu.Banner.imageUrl)
+        if not Menu.bannerTexture then
+            Menu.LoadBannerTexture(Menu.Banner.imageUrl)
+        end
     end
 end
 

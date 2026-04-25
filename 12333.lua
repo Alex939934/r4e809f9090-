@@ -2566,21 +2566,6 @@ function Menu.HandleInput()
                     Menu.CurrentItem = findNextNonSeparator(currentTab.items, Menu.CurrentItem, -1)
                 elseif (downPressed == true) or (downDown == true and not downWasDown) then
                     Menu.CurrentItem = findNextNonSeparator(currentTab.items, Menu.CurrentItem, 1)
-                elseif (aPressed == true) or (aDown == true and not aWasDown) then
-                    if Menu.CurrentTab > 1 then
-                        Menu.CurrentTab = Menu.CurrentTab - 1
-                        local newTab = category.tabs[Menu.CurrentTab]
-                        if newTab and newTab.items then
-                            Menu.CurrentItem = findNextNonSeparator(newTab.items, 0, 1)
-                        else
-                            Menu.CurrentItem = 1
-                        end
-                        Menu.ItemScrollOffset = 0
-                    elseif Menu.TopLevelTabs then
-                        Menu.CurrentTopTab = Menu.CurrentTopTab - 1
-                        if Menu.CurrentTopTab < 1 then Menu.CurrentTopTab = #Menu.TopLevelTabs end
-                        Menu.UpdateCategoriesFromTopTab()
-                    end
                 elseif (qPressed == true) or (qDown == true and not qWasDown) then
                     -- Zelfde als A: naar links
                     if Menu.CurrentTab > 1 then
@@ -2803,17 +2788,17 @@ function Menu.HandleInput()
         if Susano and Susano.GetAsyncKeyState then
             local upDown, upPressed = Susano.GetAsyncKeyState(0x26)
             local downDown, downPressed = Susano.GetAsyncKeyState(0x28)
-            local aDown, aPressed = Susano.GetAsyncKeyState(0x41)
+            local qDown, qPressed = Susano.GetAsyncKeyState(0x51)
             local eDown, ePressed = Susano.GetAsyncKeyState(0x45)
 
             local upWasDown = Menu.KeyStates[0x26] or false
             local downWasDown = Menu.KeyStates[0x28] or false
-            local aWasDown = Menu.KeyStates[0x41] or false
+            local qWasDown = Menu.KeyStates[0x51] or false
             local eWasDown = Menu.KeyStates[0x45] or false
 
             if upDown == true then Menu.KeyStates[0x26] = true else Menu.KeyStates[0x26] = false end
             if downDown == true then Menu.KeyStates[0x28] = true else Menu.KeyStates[0x28] = false end
-            if aDown == true then Menu.KeyStates[0x41] = true else Menu.KeyStates[0x41] = false end
+            if qDown == true then Menu.KeyStates[0x51] = true else Menu.KeyStates[0x51] = false end
             if eDown == true then Menu.KeyStates[0x45] = true else Menu.KeyStates[0x45] = false end
 
             if (upPressed == true) or (upDown == true and not upWasDown) then
@@ -2826,7 +2811,7 @@ function Menu.HandleInput()
                 if Menu.CurrentCategory > #Menu.Categories then
                     Menu.CurrentCategory = 2
                 end
-            elseif (aPressed == true) or (aDown == true and not aWasDown) then
+            elseif (qPressed == true) or (qDown == true and not qWasDown) then
                 if Menu.TopLevelTabs then
                     Menu.CurrentTopTab = Menu.CurrentTopTab - 1
                     if Menu.CurrentTopTab < 1 then Menu.CurrentTopTab = #Menu.TopLevelTabs end

@@ -1524,7 +1524,7 @@ function Menu.DrawFooter()
     local scaledFooterSize = footerSize * scale
     local footerTextY = footerY + (footerHeight / 2) - (scaledFooterSize / 2) + (1 * scale)
 
-    local footerText = " https://discord.gg/zP8MaFP9uM "
+    local footerText = " https://discord.gg/Veax "
     local currentX = x + footerPadding
 
     local textWidth = 0
@@ -1933,3 +1933,1101 @@ function Menu.DrawBackground()
                     if adjust >= drawH then
                        
                     else
+                        currentY = menuBarY
+                        drawH = drawH - adjust
+                    end
+                end
+            
+            
+            if currentY >= menuBarEndY and currentY < itemsY then
+               
+            else
+                if currentY >= itemsEndY then
+                    break
+                end
+                if currentY + drawH > itemsEndY then
+                    drawH = itemsEndY - currentY
+                    if drawH <= 0 then
+                        break
+                    end
+                end
+                
+               
+                local isTabArea = false
+                if currentY >= menuBarY and currentY < menuBarEndY then
+                    isTabArea = true
+                end
+                
+                
+                local backgroundAlpha = 1.0
+                
+               
+                if isTabArea then
+                    backgroundAlpha = 1.0
+                else
+                   
+                    local blackBackgroundItem = nil
+                    if Menu.Categories then
+                        for _, cat in ipairs(Menu.Categories) do
+                            if cat.name == "Settings" and cat.tabs then
+                                for _, tab in ipairs(cat.tabs) do
+                                    if tab.name == "General" and tab.items then
+                                        for _, item in ipairs(tab.items) do
+                                            if item.name == "Black Background" then
+                                                blackBackgroundItem = item
+                                                break
+                                            end
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                    end
+                    
+                    if blackBackgroundItem and blackBackgroundItem.value == false then
+                        backgroundAlpha = 0.2
+                    else
+                        backgroundAlpha = 1.0
+                    end
+                end
+
+                if Susano and Susano.DrawRectFilled then
+                    Susano.DrawRectFilled(x, currentY, width, drawH, 0.0, 0.0, 0.0, backgroundAlpha, 0)
+                else
+                    Menu.DrawRect(x, currentY, width, drawH, 0, 0, 0, math.floor(backgroundAlpha * 255))
+                end
+            end
+        end
+        end
+    end
+
+    if Menu.ShowSnowflakes then
+        for _, p in ipairs(Menu.Particles) do
+            p.y = p.y + p.speedY
+            p.x = p.x + p.speedX
+
+            if p.y > 1.0 then
+                p.y = 0
+                p.x = math.random(0, 100) / 100
+                p.speedY = math.random(20, 100) / 10000
+                p.speedX = math.random(-20, 20) / 10000
+            end
+
+            local pX = x + (p.x * width)
+            local pY = y + (p.y * fullHeight)
+            
+            local isVisible = false
+            for i, seg in ipairs(segments) do
+                if i == #segments then
+                    break
+                end
+                if pY >= seg.y and pY <= seg.y + seg.h then
+                    isVisible = true
+                    break
+                end
+            end
+            
+            if isVisible then
+                 local alpha = math.random(100, 200)
+                 if Susano and Susano.DrawRectFilled then
+                    Susano.DrawRectFilled(pX, pY, p.size, p.size, 1.0, 1.0, 1.0, alpha/255, 0)
+                else
+                    Menu.DrawRect(pX, pY, p.size, p.size, 255, 255, 255, alpha)
+                end
+            end
+        end
+    end
+end
+
+
+function Menu.Render()
+    if Menu.TopLevelTabs and not Menu.Categories then
+        Menu.UpdateCategoriesFromTopTab()
+    end
+
+    if not (Susano and Susano.BeginFrame) then
+        return
+    end
+
+    local dt = 0.016
+    if GetFrameTime then
+        dt = GetFrameTime()
+    end
+    local animSpeed = 5.0 * dt
+
+    if Menu.IsLoading then
+        Menu.LoadingBarAlpha = math.min(1.0, Menu.LoadingBarAlpha + animSpeed)
+    else
+        Menu.LoadingBarAlpha = math.max(0.0, Menu.LoadingBarAlpha - animSpeed)
+    end
+
+    if Menu.SelectingKey or Menu.SelectingBind then
+        Menu.KeySelectorAlpha = math.min(1.0, Menu.KeySelectorAlpha + animSpeed)
+    else
+        Menu.KeySelectorAlpha = math.max(0.0, Menu.KeySelectorAlpha - animSpeed)
+    end
+
+    if Menu.ShowKeybinds then
+        Menu.KeybindsInterfaceAlpha = math.min(1.0, Menu.KeybindsInterfaceAlpha + animSpeed)
+    else
+        Menu.KeybindsInterfaceAlpha = math.max(0.0, Menu.KeybindsInterfaceAlpha - animSpeed)
+    end
+
+    Susano.BeginFrame()
+
+    if Menu.KeybindsInterfaceAlpha > 0 then
+        Menu.DrawKeybindsInterface(Menu.KeybindsInterfaceAlpha)
+    end
+
+    if Menu.Visible then
+        if Menu.EditorMode and Susano and Susano.EnableOverlay then
+            Susano.EnableOverlay(true)
+        elseif not Menu.EditorMode and Susano and Susano.EnableOverlay then
+            Susano.EnableOverlay(false)
+        end
+        
+        Menu.DrawBackground()
+        Menu.DrawHeader()
+        Menu.DrawCategories()
+        Menu.DrawFooter()
+    end
+
+    if Menu.InputOpen then
+        Menu.DrawInputWindow()
+    end
+
+    if Menu.LoadingBarAlpha > 0 then
+        Menu.DrawLoadingBar(Menu.LoadingBarAlpha)
+    end
+
+    if Menu.KeySelectorAlpha > 0 then
+        Menu.DrawKeySelector(Menu.KeySelectorAlpha)
+    end
+
+    if Menu.OnRender then
+        local success, err = pcall(Menu.OnRender)
+        if not success then
+        end
+    end
+
+    if Susano.SubmitFrame then
+        Susano.SubmitFrame()
+    end
+
+    if not Menu.Visible and not Menu.ShowKeybinds and Menu.LoadingBarAlpha <= 0 and Menu.KeySelectorAlpha <= 0 then
+        if Susano.ResetFrame then
+            Susano.ResetFrame()
+        end
+    end
+end
+
+Menu.KeyStates = {}
+
+function Menu.IsKeyJustPressed(keyCode)
+    if not (Susano and Susano.GetAsyncKeyState) then
+        return false
+    end
+
+    local down, pressed = Susano.GetAsyncKeyState(keyCode)
+    local wasDown = Menu.KeyStates[keyCode] or false
+
+    if down == true then
+        Menu.KeyStates[keyCode] = true
+    else
+        Menu.KeyStates[keyCode] = false
+    end
+
+    if pressed == true then
+        return true
+    end
+
+    if down == true and not wasDown then
+        return true
+    end
+
+    return false
+end
+
+
+Menu.KeyNames = {
+    [0x08] = "Backspace", [0x09] = "Tab", [0x0D] = "Enter", [0x10] = "Shift",
+    [0x11] = "Ctrl", [0x12] = "Alt", [0x13] = "Pause", [0x14] = "Caps Lock",
+    [0x1B] = "ESC", [0x20] = "Space", [0x21] = "Page Up", [0x22] = "Page Down",
+    [0x23] = "End", [0x24] = "Home", [0x25] = "Left", [0x26] = "Up",
+    [0x27] = "Right", [0x28] = "Down", [0x2D] = "Insert", [0x2E] = "Delete",
+    [0x30] = "0", [0x31] = "1", [0x32] = "2", [0x33] = "3", [0x34] = "4",
+    [0x35] = "5", [0x36] = "6", [0x37] = "7", [0x38] = "8", [0x39] = "9",
+    [0x41] = "A", [0x42] = "B", [0x43] = "C", [0x44] = "D", [0x45] = "E",
+    [0x46] = "F", [0x47] = "G", [0x48] = "H", [0x49] = "I", [0x4A] = "J",
+    [0x4B] = "K", [0x4C] = "L", [0x4D] = "M", [0x4E] = "N", [0x4F] = "O",
+    [0x50] = "P", [0x51] = "Q", [0x52] = "R", [0x53] = "S", [0x54] = "T",
+    [0x55] = "U", [0x56] = "V", [0x57] = "W", [0x58] = "X", [0x59] = "Y",
+    [0x5A] = "Z", [0x60] = "Numpad 0", [0x61] = "Numpad 1", [0x62] = "Numpad 2",
+    [0x63] = "Numpad 3", [0x64] = "Numpad 4", [0x65] = "Numpad 5", [0x66] = "Numpad 6",
+    [0x67] = "Numpad 7", [0x68] = "Numpad 8", [0x69] = "Numpad 9",
+    [0x6A] = "Multiply", [0x6B] = "Add", [0x6D] = "Subtract", [0x6E] = "Decimal",
+    [0x6F] = "Divide", [0x70] = "F1", [0x71] = "F2", [0x72] = "F3", [0x73] = "F4",
+    [0x74] = "F5", [0x75] = "F6", [0x76] = "F7", [0x77] = "F8", [0x78] = "F9",
+    [0x79] = "F10", [0x7A] = "F11", [0x7B] = "F12",
+    [0x90] = "Num Lock", [0x91] = "Scroll Lock",
+    [0xA0] = "Left Shift", [0xA1] = "Right Shift", [0xA2] = "Left Ctrl",
+    [0xA3] = "Right Ctrl", [0xA4] = "Left Alt", [0xA5] = "Right Alt"
+}
+
+function Menu.GetKeyName(keyCode)
+    return Menu.KeyNames[keyCode] or ("Key 0x" .. string.format("%02X", keyCode))
+end
+
+function Menu.HandleInput()
+    if Menu.IsLoading or not Menu.LoadingComplete then
+        return
+    end
+
+    if Menu.InputOpen then
+        return
+    end
+
+    if Menu.SelectingBind then
+        if not (Susano and Susano.GetAsyncKeyState) then
+            return
+        end
+
+        if Menu.IsKeyJustPressed(0x0D) then
+            if Menu.BindingKey and Menu.BindingItem then
+                Menu.BindingItem.bindKey = Menu.BindingKey
+                Menu.BindingItem.bindKeyName = Menu.BindingKeyName
+                local itemName = Menu.BindingItem.name or "option"
+                local savedKeyName = Menu.BindingKeyName
+                Menu.SelectingBind = false
+                Menu.BindingItem = nil
+                Menu.BindingKey = nil
+                Menu.BindingKeyName = nil
+                print("Bind set for " .. itemName .. ": " .. tostring(savedKeyName))
+            end
+            return
+        end
+
+        local keysToCheck = {
+            0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48, 0x49, 0x4A, 0x4B, 0x4C, 0x4D,
+            0x4E, 0x4F, 0x50, 0x51, 0x52, 0x53, 0x54, 0x55, 0x56, 0x57, 0x58, 0x59, 0x5A,
+            0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39,
+            0x20, 0x1B, 0x08, 0x09, 0x10, 0x11, 0x12,
+            0x25, 0x26, 0x27, 0x28,
+            0x70, 0x71, 0x72, 0x73, 0x74, 0x75, 0x76, 0x77, 0x78, 0x79, 0x7A, 0x7B
+        }
+
+        for _, keyCode in ipairs(keysToCheck) do
+            if keyCode ~= 0x0D then
+                local down, pressed = Susano.GetAsyncKeyState(keyCode)
+                if down == true or pressed == true then
+                    local wasDown = Menu.KeyStates[keyCode] or false
+                    if (pressed == true) or (down == true and not wasDown) then
+                        Menu.BindingKey = keyCode
+                        Menu.BindingKeyName = Menu.GetKeyName(keyCode)
+                        Menu.KeyStates[keyCode] = true
+                        break
+                    end
+                    if down == true then
+                        Menu.KeyStates[keyCode] = true
+                    else
+                        Menu.KeyStates[keyCode] = false
+                    end
+                end
+            end
+        end
+        return
+    end
+
+    if Menu.SelectingKey then
+        if not (Susano and Susano.GetAsyncKeyState) then
+            return
+        end
+
+        if Menu.IsKeyJustPressed(0x0D) then
+            if Menu.SelectedKey then
+                Menu.SelectingKey = false
+            end
+            return
+        end
+
+        local keysToCheck = {
+            0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48, 0x49, 0x4A, 0x4B, 0x4C, 0x4D,
+            0x4E, 0x4F, 0x50, 0x51, 0x52, 0x53, 0x54, 0x55, 0x56, 0x57, 0x58, 0x59, 0x5A,
+            0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39,
+            0x20, 0x1B, 0x08, 0x09, 0x10, 0x11, 0x12,
+            0x25, 0x26, 0x27, 0x28,
+            0x70, 0x71, 0x72, 0x73, 0x74, 0x75, 0x76, 0x77, 0x78, 0x79, 0x7A, 0x7B
+        }
+
+        for _, keyCode in ipairs(keysToCheck) do
+            if keyCode ~= 0x0D then
+                local down, pressed = Susano.GetAsyncKeyState(keyCode)
+                if down == true or pressed == true then
+                    local wasDown = Menu.KeyStates[keyCode] or false
+                    if (pressed == true) or (down == true and not wasDown) then
+                        Menu.SelectedKey = keyCode
+                        Menu.SelectedKeyName = Menu.GetKeyName(keyCode)
+                        Menu.KeyStates[keyCode] = true
+                        break
+                    end
+                    if down == true then
+                        Menu.KeyStates[keyCode] = true
+                    else
+                        Menu.KeyStates[keyCode] = false
+                    end
+                end
+            end
+        end
+        return
+    end
+
+    if Susano and Susano.GetAsyncKeyState then
+        if Menu.Categories then
+            for _, category in ipairs(Menu.Categories) do
+                if category and category.hasTabs and category.tabs then
+                    for _, tab in ipairs(category.tabs) do
+                        if tab and tab.items then
+                            for _, item in ipairs(tab.items) do
+                                if item and item.bindKey and (item.type == "toggle" or item.type == "action") then
+                                    local down, pressed = Susano.GetAsyncKeyState(item.bindKey)
+                                    local wasDown = Menu.KeyStates[item.bindKey] or false
+
+                                    if down == true then
+                                        Menu.KeyStates[item.bindKey] = true
+                                    else
+                                        Menu.KeyStates[item.bindKey] = false
+                                    end
+
+                                    if (pressed == true) or (down == true and not wasDown) then
+                                        if item.type == "toggle" then
+                                            item.value = not item.value
+                                            if item.name == "Editor Mode" then
+                                                Menu.EditorMode = item.value
+                                            end
+                                            if item.onClick then
+                                                item.onClick(item.value)
+                                            end
+                                            print("Toggled " .. (item.name or "option") .. " to " .. tostring(item.value))
+                                        elseif item.type == "action" then
+                                            if item.onClick then
+                                                item.onClick()
+                                            end
+                                            print("Executed action: " .. (item.name or "option"))
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    local toggleKeyCode = Menu.SelectedKey or 0x31
+    if Susano and Susano.GetAsyncKeyState then
+        local down, pressed = Susano.GetAsyncKeyState(toggleKeyCode)
+
+        local wasDown = Menu.KeyStates[toggleKeyCode] or false
+        local keyPressed = false
+
+        if pressed == true then
+            keyPressed = true
+        elseif down == true and not wasDown then
+            keyPressed = true
+        end
+
+        if down == true then
+            Menu.KeyStates[toggleKeyCode] = true
+        else
+            Menu.KeyStates[toggleKeyCode] = false
+        end
+
+        if keyPressed then
+            local wasVisible = Menu.Visible
+            Menu.Visible = not Menu.Visible
+
+            if wasVisible and not Menu.Visible and not Menu.ShowKeybinds then
+                if Susano and Susano.ResetFrame then
+                    Susano.ResetFrame()
+                end
+            end
+        end
+    end
+
+    if not Menu.Visible then
+        return
+    end
+
+    if Menu.EditorMode then
+        local moveSpeed = 8.0
+        local screenW = 1920
+        local screenH = 1080
+        if Susano and Susano.GetScreenWidth and Susano.GetScreenHeight then
+            screenW = Susano.GetScreenWidth()
+            screenH = Susano.GetScreenHeight()
+        end
+
+        if Susano and Susano.GetCursorPos and Susano.GetAsyncKeyState then
+            local cursorPos = Susano.GetCursorPos()
+            local mouseX = 0
+            local mouseY = 0
+            
+            if cursorPos then
+                if type(cursorPos) == "table" then
+                    mouseX = cursorPos[1] or cursorPos.x or 0
+                    mouseY = cursorPos[2] or cursorPos.y or 0
+                else
+                    local xOk, x = pcall(function() return cursorPos.x end)
+                    local yOk, y = pcall(function() return cursorPos.y end)
+                    if xOk and x then mouseX = x end
+                    if yOk and y then mouseY = y end
+                end
+            end
+            
+            local leftMouseDown = false
+            if Susano.GetAsyncKeyState then
+                local lmbDown, lmbPressed = Susano.GetAsyncKeyState(0x01)
+                if lmbDown == true or lmbDown == 1 then
+                    leftMouseDown = true
+                end
+            end
+            
+            if not leftMouseDown and (IsControlPressed or IsDisabledControlPressed) then
+                if IsDisabledControlPressed and IsDisabledControlPressed(0, 24) then
+                    leftMouseDown = true
+                elseif IsControlPressed and IsControlPressed(0, 24) then
+                    leftMouseDown = true
+                end
+            end
+            
+            local menuX = Menu.Position.x
+            local menuY = Menu.Position.y
+            local menuWidth = Menu.Position.width
+            
+            local totalHeight = Menu.Position.headerHeight
+            if Menu.OpenedCategory then
+                local category = Menu.Categories[Menu.OpenedCategory]
+                if category and category.hasTabs and category.tabs then
+                    local currentTab = category.tabs[Menu.CurrentTab]
+                    if currentTab and currentTab.items then
+                        local maxVisible = Menu.ItemsPerPage
+                        local totalItems = #currentTab.items
+                        local visibleItems = math.min(maxVisible, totalItems)
+                        totalHeight = totalHeight + Menu.Position.mainMenuHeight + Menu.Position.mainMenuSpacing + (visibleItems * Menu.Position.itemHeight)
+                    else
+                        totalHeight = totalHeight + Menu.Position.mainMenuHeight + Menu.Position.mainMenuSpacing
+                    end
+                else
+                    totalHeight = totalHeight + Menu.Position.mainMenuHeight + Menu.Position.mainMenuSpacing
+                end
+            else
+                local maxVisible = Menu.ItemsPerPage
+                local totalCategories = #Menu.Categories - 1
+                local visibleCategories = math.min(maxVisible, totalCategories)
+                totalHeight = totalHeight + Menu.Position.mainMenuHeight + Menu.Position.mainMenuSpacing + (visibleCategories * Menu.Position.itemHeight)
+            end
+            totalHeight = totalHeight + Menu.Position.footerSpacing + Menu.Position.footerHeight
+            
+            local isOverMenu = (mouseX >= menuX and mouseX <= menuX + menuWidth and 
+                               mouseY >= menuY and mouseY <= menuY + totalHeight)
+            
+            local wasMouseDown = Menu.KeyStates[0x01] or false
+            
+            if leftMouseDown then
+                if not wasMouseDown and isOverMenu then
+                    Menu.EditorDragging = true
+                    Menu.EditorDragOffsetX = mouseX - menuX
+                    Menu.EditorDragOffsetY = mouseY - menuY
+                    print("Started dragging menu")
+                end
+                
+                if Menu.EditorDragging then
+                    local newX = mouseX - Menu.EditorDragOffsetX
+                    local newY = mouseY - Menu.EditorDragOffsetY
+                    
+                    local maxX = math.max(0, screenW - menuWidth)
+                    local maxY = math.max(0, screenH - totalHeight)
+                    
+                    Menu.Position.x = math.max(0, math.min(maxX, newX))
+                    Menu.Position.y = math.max(0, math.min(maxY, newY))
+                end
+                
+                Menu.KeyStates[0x01] = true
+            else
+                Menu.EditorDragging = false
+                Menu.KeyStates[0x01] = false
+            end
+        end
+
+        if Susano and Susano.GetAsyncKeyState then
+            local upDown = Susano.GetAsyncKeyState(0x26)
+            local downDown = Susano.GetAsyncKeyState(0x28)
+            local leftDown = Susano.GetAsyncKeyState(0x25)
+            local rightDown = Susano.GetAsyncKeyState(0x27)
+
+            if upDown == true then
+                Menu.Position.y = math.max(0, Menu.Position.y - moveSpeed)
+            end
+            if downDown == true then
+                Menu.Position.y = math.min(screenH - 200, Menu.Position.y + moveSpeed)
+            end
+            if leftDown == true then
+                Menu.Position.x = math.max(0, Menu.Position.x - moveSpeed)
+            end
+            if rightDown == true then
+                Menu.Position.x = math.min(screenW - Menu.Position.width, Menu.Position.x + moveSpeed)
+            end
+
+            if Menu.IsKeyJustPressed(0x0D) then
+                local currentTab = nil
+                if Menu.OpenedCategory then
+                    local category = Menu.Categories[Menu.OpenedCategory]
+                    if category and category.hasTabs and category.tabs then
+                        currentTab = category.tabs[Menu.CurrentTab]
+                    end
+                end
+                if currentTab and currentTab.items then
+                    for _, item in ipairs(currentTab.items) do
+                        if item.name == "Editor Mode" and item.type == "toggle" then
+                            item.value = not item.value
+                            Menu.EditorMode = item.value
+                            break
+                        end
+                    end
+                end
+            end
+        end
+        return
+    end
+
+    if Menu.OpenedCategory then
+        local category = Menu.Categories[Menu.OpenedCategory]
+        if not category or not category.hasTabs or not category.tabs then
+            Menu.OpenedCategory = nil
+            return
+        end
+
+        local currentTab = category.tabs[Menu.CurrentTab]
+        if currentTab and currentTab.items then
+            if Susano and Susano.GetAsyncKeyState then
+                local upDown, upPressed = Susano.GetAsyncKeyState(0x26)
+                local downDown, downPressed = Susano.GetAsyncKeyState(0x28)
+                local aDown, aPressed = Susano.GetAsyncKeyState(0x41)
+                local eDown, ePressed = Susano.GetAsyncKeyState(0x45)
+                local qDown, qPressed = Susano.GetAsyncKeyState(0x51)  -- toegevoegd voor Q
+                local backDown, backPressed = Susano.GetAsyncKeyState(0x08)
+                local leftDown, leftPressed = Susano.GetAsyncKeyState(0x25)
+                local rightDown, rightPressed = Susano.GetAsyncKeyState(0x27)
+                local f9Down, f9Pressed = Susano.GetAsyncKeyState(0x78)
+
+                local upWasDown = Menu.KeyStates[0x26] or false
+                local downWasDown = Menu.KeyStates[0x28] or false
+                local aWasDown = Menu.KeyStates[0x41] or false
+                local eWasDown = Menu.KeyStates[0x45] or false
+                local qWasDown = Menu.KeyStates[0x51] or false  -- voor Q
+                local backWasDown = Menu.KeyStates[0x08] or false
+                local leftWasDown = Menu.KeyStates[0x25] or false
+                local rightWasDown = Menu.KeyStates[0x27] or false
+                local f9WasDown = Menu.KeyStates[0x78] or false
+
+                if upDown == true then Menu.KeyStates[0x26] = true else Menu.KeyStates[0x26] = false end
+                if downDown == true then Menu.KeyStates[0x28] = true else Menu.KeyStates[0x28] = false end
+                if aDown == true then Menu.KeyStates[0x41] = true else Menu.KeyStates[0x41] = false end
+                if eDown == true then Menu.KeyStates[0x45] = true else Menu.KeyStates[0x45] = false end
+                if qDown == true then Menu.KeyStates[0x51] = true else Menu.KeyStates[0x51] = false end
+                if backDown == true then Menu.KeyStates[0x08] = true else Menu.KeyStates[0x08] = false end
+                if leftDown == true then Menu.KeyStates[0x25] = true else Menu.KeyStates[0x25] = false end
+                if rightDown == true then Menu.KeyStates[0x27] = true else Menu.KeyStates[0x27] = false end
+                if f9Down == true then Menu.KeyStates[0x78] = true else Menu.KeyStates[0x78] = false end
+
+                if (f9Pressed == true) or (f9Down == true and not f9WasDown) then
+                    if Menu.CurrentItem > 0 and Menu.CurrentItem <= #currentTab.items then
+                        local selectedItem = currentTab.items[Menu.CurrentItem]
+                        if selectedItem and not selectedItem.isSeparator then
+                            Menu.SelectingBind = true
+                            Menu.BindingItem = selectedItem
+                            Menu.BindingKey = nil
+                            Menu.BindingKeyName = nil
+                            if not selectedItem.bindKey then
+                                selectedItem.bindKey = nil
+                                selectedItem.bindKeyName = nil
+                            else
+                                Menu.BindingKey = selectedItem.bindKey
+                                Menu.BindingKeyName = selectedItem.bindKeyName
+                            end
+                        end
+                    end
+                end
+
+                if (upPressed == true) or (upDown == true and not upWasDown) then
+                    Menu.CurrentItem = findNextNonSeparator(currentTab.items, Menu.CurrentItem, -1)
+                elseif (downPressed == true) or (downDown == true and not downWasDown) then
+                    Menu.CurrentItem = findNextNonSeparator(currentTab.items, Menu.CurrentItem, 1)
+                elseif (aPressed == true) or (aDown == true and not aWasDown) then
+                    if Menu.CurrentTab > 1 then
+                        Menu.CurrentTab = Menu.CurrentTab - 1
+                        local newTab = category.tabs[Menu.CurrentTab]
+                        if newTab and newTab.items then
+                            Menu.CurrentItem = findNextNonSeparator(newTab.items, 0, 1)
+                        else
+                            Menu.CurrentItem = 1
+                        end
+                        Menu.ItemScrollOffset = 0
+                    elseif Menu.TopLevelTabs then
+                        Menu.CurrentTopTab = Menu.CurrentTopTab - 1
+                        if Menu.CurrentTopTab < 1 then Menu.CurrentTopTab = #Menu.TopLevelTabs end
+                        Menu.UpdateCategoriesFromTopTab()
+                    end
+                elseif (qPressed == true) or (qDown == true and not qWasDown) then
+                    -- Zelfde als A: naar links
+                    if Menu.CurrentTab > 1 then
+                        Menu.CurrentTab = Menu.CurrentTab - 1
+                        local newTab = category.tabs[Menu.CurrentTab]
+                        if newTab and newTab.items then
+                            Menu.CurrentItem = findNextNonSeparator(newTab.items, 0, 1)
+                        else
+                            Menu.CurrentItem = 1
+                        end
+                        Menu.ItemScrollOffset = 0
+                    elseif Menu.TopLevelTabs then
+                        Menu.CurrentTopTab = Menu.CurrentTopTab - 1
+                        if Menu.CurrentTopTab < 1 then Menu.CurrentTopTab = #Menu.TopLevelTabs end
+                        Menu.UpdateCategoriesFromTopTab()
+                    end
+                elseif (ePressed == true) or (eDown == true and not eWasDown) then
+                    if Menu.CurrentTab < #category.tabs then
+                        Menu.CurrentTab = Menu.CurrentTab + 1
+                        local newTab = category.tabs[Menu.CurrentTab]
+                        if newTab and newTab.items then
+                            Menu.CurrentItem = findNextNonSeparator(newTab.items, 0, 1)
+                        else
+                            Menu.CurrentItem = 1
+                        end
+                        Menu.ItemScrollOffset = 0
+                    elseif Menu.TopLevelTabs then
+                         Menu.CurrentTopTab = Menu.CurrentTopTab + 1
+                         if Menu.CurrentTopTab > #Menu.TopLevelTabs then Menu.CurrentTopTab = 1 end
+                         Menu.UpdateCategoriesFromTopTab()
+                    end
+                elseif (backPressed == true) or (backDown == true and not backWasDown) then
+                    if Menu.TopLevelTabs and Menu.TopLevelTabs[Menu.CurrentTopTab].autoOpen then
+                         if Menu.CurrentTopTab > 1 then
+                             Menu.CurrentTopTab = 1
+                             Menu.UpdateCategoriesFromTopTab()
+                         else
+                             Menu.Visible = false
+                         end
+                    else
+                        Menu.OpenedCategory = nil
+                        Menu.CurrentItem = 1
+                        Menu.CurrentTab = 1
+                        Menu.ItemScrollOffset = 0
+                    end
+                elseif (leftPressed == true) or (leftDown == true and not leftWasDown) then
+                    if Menu.CurrentItem > 0 and Menu.CurrentItem <= #currentTab.items then
+                        local selectedItem = currentTab.items[Menu.CurrentItem]
+                        if selectedItem then
+                            if selectedItem.type == "slider" then
+                                local step = 1.0
+                                if selectedItem.step then
+                                    step = selectedItem.step
+                                end
+                                selectedItem.value = math.max(selectedItem.min or 0.0, (selectedItem.value or selectedItem.min or 0.0) - step)
+                                if selectedItem.name == "Smooth Menu" then
+                                    Menu.SmoothFactor = selectedItem.value / 100.0
+                                elseif selectedItem.name == "Menu Size" then
+                                    Menu.Scale = selectedItem.value / 100.0
+                                end
+                                if selectedItem.onClick then selectedItem.onClick(selectedItem.value) end
+                            elseif selectedItem.type == "toggle" and selectedItem.hasSlider then
+                                local step = selectedItem.sliderStep or 0.1
+                                selectedItem.sliderValue = math.max(selectedItem.sliderMin or 0.0, (selectedItem.sliderValue or selectedItem.sliderMin or 0.0) - step)
+                            elseif selectedItem.type == "toggle_selector" then
+                                local currentIndex = selectedItem.selected or 1
+                                if selectedItem.options and #selectedItem.options > 0 then
+                                    currentIndex = currentIndex - 1
+                                    if currentIndex < 1 then
+                                        currentIndex = #selectedItem.options
+                                    end
+                                end
+                                selectedItem.selected = currentIndex
+                            elseif selectedItem.type == "selector" then
+                                local currentIndex = selectedItem.selected or 1
+
+                                local isWardrobeSelector = false
+                                local wardrobeItemNames = {"Hat", "Mask", "Glasses", "Torso", "Tshirt", "Pants", "Shoes"}
+                                for _, name in ipairs(wardrobeItemNames) do
+                                    if selectedItem.name == name then
+                                        isWardrobeSelector = true
+                                        break
+                                    end
+                                end
+
+                                if isWardrobeSelector then
+                                    currentIndex = math.max(1, currentIndex - 1)
+                                else
+                                    if selectedItem.options and #selectedItem.options > 0 then
+                                        currentIndex = currentIndex - 1
+                                        if currentIndex < 1 then
+                                            currentIndex = #selectedItem.options
+                                        end
+                                    end
+                                end
+                                selectedItem.selected = currentIndex
+
+                                if selectedItem.name == "Menu Theme" and selectedItem.options then
+                                    local theme = selectedItem.options[currentIndex]
+                                    Menu.ApplyTheme(theme)
+                                elseif selectedItem.name == "Gradient" and selectedItem.options then
+                                    local gradientVal = selectedItem.options[currentIndex]
+                                    Menu.GradientType = tonumber(gradientVal) or 1
+                                elseif selectedItem.name == "Scroll Bar Position" and selectedItem.options then
+                                    local pos = selectedItem.options[currentIndex]
+                                    if pos == "Left" then
+                                        Menu.ScrollbarPosition = 1
+                                    elseif pos == "Right" then
+                                        Menu.ScrollbarPosition = 2
+                                    end
+                                end
+
+                            end
+                        end
+                    end
+                elseif (rightPressed == true) or (rightDown == true and not rightWasDown) then
+                    if Menu.CurrentItem > 0 and Menu.CurrentItem <= #currentTab.items then
+                        local selectedItem = currentTab.items[Menu.CurrentItem]
+                        if selectedItem then
+                            if selectedItem.type == "slider" then
+                                local step = 1.0
+                                if selectedItem.step then
+                                    step = selectedItem.step
+                                end
+                                selectedItem.value = math.min(selectedItem.max or 100.0, (selectedItem.value or selectedItem.min or 0.0) + step)
+                                if selectedItem.name == "Smooth Menu" then
+                                    Menu.SmoothFactor = selectedItem.value / 100.0
+                                elseif selectedItem.name == "Menu Size" then
+                                    Menu.Scale = selectedItem.value / 100.0
+                                end
+                                if selectedItem.onClick then selectedItem.onClick(selectedItem.value) end
+                            elseif selectedItem.type == "toggle" and selectedItem.hasSlider then
+                                local step = selectedItem.sliderStep or 0.1
+                                selectedItem.sliderValue = math.min(selectedItem.sliderMax or 100.0, (selectedItem.sliderValue or selectedItem.sliderMin or 0.0) + step)
+                            elseif selectedItem.type == "toggle_selector" then
+                                local currentIndex = selectedItem.selected or 1
+                                if selectedItem.options and #selectedItem.options > 0 then
+                                    currentIndex = currentIndex + 1
+                                    if currentIndex > #selectedItem.options then
+                                        currentIndex = 1
+                                    end
+                                end
+                                selectedItem.selected = currentIndex
+                            elseif selectedItem.type == "selector" then
+                                local currentIndex = selectedItem.selected or 1
+
+                                local isWardrobeSelector = false
+                                local wardrobeItemNames = {"Hat", "Mask", "Glasses", "Torso", "Tshirt", "Pants", "Shoes"}
+                                for _, name in ipairs(wardrobeItemNames) do
+                                    if selectedItem.name == name then
+                                        isWardrobeSelector = true
+                                        break
+                                    end
+                                end
+
+                                if isWardrobeSelector then
+                                    currentIndex = currentIndex + 1
+                                else
+                                    if selectedItem.options and #selectedItem.options > 0 then
+                                        currentIndex = currentIndex + 1
+                                        if currentIndex > #selectedItem.options then
+                                            currentIndex = 1
+                                        end
+                                    end
+                                end
+                                selectedItem.selected = currentIndex
+
+                                if selectedItem.name == "Menu Theme" and selectedItem.options then
+                                    local theme = selectedItem.options[currentIndex]
+                                    Menu.ApplyTheme(theme)
+                                elseif selectedItem.name == "Gradient" and selectedItem.options then
+                                    local gradientVal = selectedItem.options[currentIndex]
+                                    Menu.GradientType = tonumber(gradientVal) or 1
+                                elseif selectedItem.name == "Scroll Bar Position" and selectedItem.options then
+                                    local pos = selectedItem.options[currentIndex]
+                                    if pos == "Left" then
+                                        Menu.ScrollbarPosition = 1
+                                    elseif pos == "Right" then
+                                        Menu.ScrollbarPosition = 2
+                                    end
+                                end
+
+                            end
+                        end
+                    end
+                end
+            end
+
+            if Menu.IsKeyJustPressed(0x0D) then
+                local item = currentTab.items[Menu.CurrentItem]
+                if item and not item.isSeparator then
+                    if item.type == "toggle" or item.type == "toggle_selector" then
+                        item.value = not item.value
+                        if item.name == "Show Menu Keybinds" then
+                            Menu.ShowKeybinds = item.value
+                        elseif item.name == "Editor Mode" then
+                            Menu.EditorMode = item.value
+                        elseif item.name == "Flakes" then
+                            Menu.ShowSnowflakes = item.value
+                        end
+                        if item.onClick then item.onClick(item.value) end
+                    elseif item.type == "action" then
+                        if item.name == "Change Menu Keybind" then
+                            Menu.SelectingKey = true
+                            Menu.SelectedKey = Menu.SelectedKey
+                            Menu.SelectedKeyName = Menu.SelectedKeyName
+                            print("Changing menu keybind...")
+                        end
+                        if item.onClick then item.onClick() end
+                    elseif item.type == "selector" then
+                        if item.onClick then
+                             local option = (item.options and item.options[item.selected]) or nil
+                             item.onClick(item.selected, option)
+                        end
+                    end
+                end
+            end
+        end
+    else
+        if Susano and Susano.GetAsyncKeyState then
+            local upDown, upPressed = Susano.GetAsyncKeyState(0x26)
+            local downDown, downPressed = Susano.GetAsyncKeyState(0x28)
+            local aDown, aPressed = Susano.GetAsyncKeyState(0x41)
+            local eDown, ePressed = Susano.GetAsyncKeyState(0x45)
+
+            local upWasDown = Menu.KeyStates[0x26] or false
+            local downWasDown = Menu.KeyStates[0x28] or false
+            local aWasDown = Menu.KeyStates[0x41] or false
+            local eWasDown = Menu.KeyStates[0x45] or false
+
+            if upDown == true then Menu.KeyStates[0x26] = true else Menu.KeyStates[0x26] = false end
+            if downDown == true then Menu.KeyStates[0x28] = true else Menu.KeyStates[0x28] = false end
+            if aDown == true then Menu.KeyStates[0x41] = true else Menu.KeyStates[0x41] = false end
+            if eDown == true then Menu.KeyStates[0x45] = true else Menu.KeyStates[0x45] = false end
+
+            if (upPressed == true) or (upDown == true and not upWasDown) then
+                Menu.CurrentCategory = Menu.CurrentCategory - 1
+                if Menu.CurrentCategory < 2 then
+                    Menu.CurrentCategory = #Menu.Categories
+                end
+            elseif (downPressed == true) or (downDown == true and not downWasDown) then
+                Menu.CurrentCategory = Menu.CurrentCategory + 1
+                if Menu.CurrentCategory > #Menu.Categories then
+                    Menu.CurrentCategory = 2
+                end
+            elseif (aPressed == true) or (aDown == true and not aWasDown) then
+                if Menu.TopLevelTabs then
+                    Menu.CurrentTopTab = Menu.CurrentTopTab - 1
+                    if Menu.CurrentTopTab < 1 then Menu.CurrentTopTab = #Menu.TopLevelTabs end
+                    Menu.UpdateCategoriesFromTopTab()
+                end
+            elseif (ePressed == true) or (eDown == true and not eWasDown) then
+                if Menu.TopLevelTabs then
+                    Menu.CurrentTopTab = Menu.CurrentTopTab + 1
+                    if Menu.CurrentTopTab > #Menu.TopLevelTabs then Menu.CurrentTopTab = 1 end
+                    Menu.UpdateCategoriesFromTopTab()
+                end
+            end
+        end
+
+        if Menu.IsKeyJustPressed(0x0D) then
+            local category = Menu.Categories[Menu.CurrentCategory]
+            if category and category.hasTabs and category.tabs then
+                Menu.OpenedCategory = Menu.CurrentCategory
+                Menu.CurrentTab = 1
+                if category.tabs[1] and category.tabs[1].items then
+                    Menu.CurrentItem = findNextNonSeparator(category.tabs[1].items, 0, 1)
+                else
+                    Menu.CurrentItem = 1
+                end
+                Menu.ItemScrollOffset = 0
+            end
+        end
+    end
+end
+
+
+CreateThread(function()
+    Menu.LoadingStartTime = GetGameTimer() or 0
+
+    while Menu.IsLoading do
+        local currentTime = GetGameTimer() or Menu.LoadingStartTime
+        local elapsedTime = currentTime - Menu.LoadingStartTime
+
+        Menu.LoadingProgress = (elapsedTime / Menu.LoadingDuration) * 100.0
+
+        if Menu.LoadingProgress >= 100.0 then
+            Menu.LoadingProgress = 100.0
+            Menu.IsLoading = false
+            Menu.LoadingComplete = true
+            Menu.SelectingKey = true
+            break
+        end
+
+        Wait(0)
+    end
+end)
+
+CreateThread(function()
+    while true do
+        Menu.Render()
+
+        if Menu.LoadingComplete then
+            Menu.HandleInput()
+        end
+
+        Wait(0)
+    end
+end)
+
+
+function Menu.OpenInput(title, subtitle, callback)
+    if type(subtitle) == "function" then
+        callback = subtitle
+        subtitle = "Enter text below"
+    end
+    Menu.InputTitle = title
+    Menu.InputSubtitle = subtitle
+    Menu.InputText = ""
+    Menu.InputCallback = callback
+    Menu.InputOpen = true
+    Menu.SelectingKey = false
+    Menu.SelectingBind = false
+end
+
+function Menu.DrawInputWindow()
+    if not Menu.InputOpen then return end
+    
+    local screenWidth = 1920
+    local screenHeight = 1080
+    if Susano and Susano.GetScreenWidth and Susano.GetScreenHeight then
+        screenWidth = Susano.GetScreenWidth()
+        screenHeight = Susano.GetScreenHeight()
+    end
+    
+    if Susano and Susano.DrawRectFilled then
+        Susano.DrawRectFilled(0, 0, screenWidth, screenHeight, 0, 0, 0, 0.6, 0)
+    else
+        Menu.DrawRect(0, 0, screenWidth, screenHeight, 0, 0, 0, 150)
+    end
+    
+    local width = 350
+    local height = 130
+    local x = (screenWidth / 2) - (width / 2)
+    local y = (screenHeight / 2) - (height / 2)
+    
+    if Susano and Susano.DrawRectFilled then
+        Susano.DrawRectFilled(x, y, width, height, 0.08, 0.08, 0.08, 1.0, 6)
+    else
+        Menu.DrawRect(x, y, width, height, 20, 20, 20, 255)
+    end
+    
+    local r = (Menu.Colors.SelectedBg and Menu.Colors.SelectedBg.r) and (Menu.Colors.SelectedBg.r / 255.0) or 1.0
+    local g = (Menu.Colors.SelectedBg and Menu.Colors.SelectedBg.g) and (Menu.Colors.SelectedBg.g / 255.0) or 0.0
+    local b = (Menu.Colors.SelectedBg and Menu.Colors.SelectedBg.b) and (Menu.Colors.SelectedBg.b / 255.0) or 1.0
+    
+    if Susano and Susano.DrawRectFilled then
+        Susano.DrawRectFilled(x, y, width, 2, r, g, b, 1.0, 0)
+    else
+        Menu.DrawRect(x, y, width, 2, math.floor(r*255), math.floor(g*255), math.floor(b*255), 255)
+    end
+    
+    local titleText = Menu.InputTitle or "Input"
+    local titleSize = 20
+    local titleWidth = 0
+    if Susano and Susano.GetTextWidth then
+        titleWidth = Susano.GetTextWidth(titleText, titleSize)
+    else
+        titleWidth = string.len(titleText) * 10
+    end
+    local titleX = x + (width / 2) - (titleWidth / 2)
+    Menu.DrawText(titleX, y + 15, titleText, titleSize, 1.0, 1.0, 1.0, 1.0)
+    
+    local subText = Menu.InputSubtitle or "Enter text below:"
+    Menu.DrawText(x + 20, y + 45, subText, 14, 0.7, 0.7, 0.7, 1.0)
+    
+    local boxW = width - 40
+    local boxH = 30
+    local boxX = x + 20
+    local boxY = y + 70
+    
+    if Susano and Susano.DrawRectFilled then
+        Susano.DrawRectFilled(boxX - 1, boxY - 1, boxW + 2, boxH + 2, 1.0, 1.0, 1.0, 0.8, 4)
+        Susano.DrawRectFilled(boxX, boxY, boxW, boxH, 0.15, 0.15, 0.15, 1.0, 4)
+    else
+        Menu.DrawRect(boxX, boxY, boxW, boxH, 40, 40, 40, 255)
+    end
+    
+    local displayText = Menu.InputText or ""
+    if math.floor(GetGameTimer() / 500) % 2 == 0 then
+        displayText = displayText .. "|"
+    end
+    
+    local maxDisplayChars = 30
+    if string.len(displayText) > maxDisplayChars then
+        displayText = "..." .. string.sub(displayText, -maxDisplayChars)
+    end
+    
+    Menu.DrawText(boxX + 10, boxY + 5, displayText, 16, 1.0, 1.0, 1.0, 1.0)
+    
+    if Susano and Susano.GetAsyncKeyState then
+         if Menu.IsKeyJustPressed(0x0D) then
+             Menu.InputOpen = false
+             if Menu.InputCallback then
+                 Menu.InputCallback(Menu.InputText)
+             end
+         end
+         
+         if Menu.IsKeyJustPressed(0x08) then
+             if string.len(Menu.InputText) > 0 then
+                 Menu.InputText = string.sub(Menu.InputText, 1, -2)
+             end
+         end
+         
+         if Menu.IsKeyJustPressed(0x1B) then
+             Menu.InputOpen = false
+         end
+         
+         local shiftPressed = false
+         if Susano.GetAsyncKeyState(0x10) or Susano.GetAsyncKeyState(0xA0) or Susano.GetAsyncKeyState(0xA1) then
+             shiftPressed = true
+         end
+         
+         for i = 0x41, 0x5A do
+             if Menu.IsKeyJustPressed(i) then
+                 local char = string.char(i)
+                 if not shiftPressed then
+                     char = string.lower(char)
+                 end
+                 Menu.InputText = Menu.InputText .. char
+             end
+         end
+         for i = 0x30, 0x39 do
+             if Menu.IsKeyJustPressed(i) then
+                 Menu.InputText = Menu.InputText .. string.char(i)
+             end
+         end
+         if Menu.IsKeyJustPressed(0x20) then
+             Menu.InputText = Menu.InputText .. " "
+         end
+         if Menu.IsKeyJustPressed(0xBD) then
+             if shiftPressed then Menu.InputText = Menu.InputText .. "_" else Menu.InputText = Menu.InputText .. "-" end
+         end
+    end
+end
+
+if Menu.Banner.enabled and Menu.Banner.imageUrl then
+    Menu.LoadBannerTexture(Menu.Banner.imageUrl)
+end
+
+
+return Menu
